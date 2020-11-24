@@ -19,6 +19,10 @@ func init() {
 	fmt.Println(initGpioRet)
 }
 
+/*
+    todo: 液位低传感器
+*/
+
 func Run() {
 	for {
 		select {

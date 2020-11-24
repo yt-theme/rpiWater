@@ -22,7 +22,7 @@ var upgrader = websocket.Upgrader{} // use default options
 var clientF, _ = ioutil.ReadFile("client.html")
 var homeTemplate = template.Must(template.New("").Parse(string(clientF)))
 
-func soc(w http.ResponseWriter, r *http.Request) {
+func socketRouter(w http.ResponseWriter, r *http.Request) {
     c, err := upgrader.Upgrade(w, r, nil)
     if err != nil {
         log.Print("upgrade:", err)
@@ -35,13 +35,13 @@ func soc(w http.ResponseWriter, r *http.Request) {
 }
 
 func home(w http.ResponseWriter, r *http.Request) {
-    homeTemplate.Execute(w, "ws://"+r.Host+"/soc")
+    homeTemplate.Execute(w, "ws://"+r.Host+"/socketRouter")
 }
 
 func Run() {
     flag.Parse()
     // log.SetFlags(0)
-    http.HandleFunc("/soc", soc)
+    http.HandleFunc("/socketRouter", socketRouter)
     http.HandleFunc("/", home)
     log.Fatal(http.ListenAndServe(*addr, nil))
 }

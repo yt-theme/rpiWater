@@ -35,7 +35,9 @@ func handler(conn *ConnS) {
 	defer func() {
 		fmt.Println("conn close =>")
 		chan_sendMsg_stop <- 1 // 消息协程退出
+        conn.Lock()
 		conn.connects.Close()
+        conn.Unlock()
 	}()
     
 	// send process's msg
