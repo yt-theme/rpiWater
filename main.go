@@ -1,13 +1,16 @@
 package main
 
 import (
-    "rpiWater/socket"
-    "rpiWater/gpioControl"
+	"rpiWater/gpioControl"
+	"rpiWater/socket"
+	"rpiWater/sysSignal"
 )
 
-func main () {
-    
-    go gpioControl.Run()
-    
-    sockets.Run()
+func main() {
+
+	go gpioControl.Run()
+
+	go sockets.Run()
+
+	sysSignal.Run()
 }
