@@ -7,7 +7,7 @@ import (
 	// "encoding/json"
 )
 
-func execPython(params []string) (string, error) {
+func ExecPython(params []string) (string, error) {
 	var args = append([]string{}, params...)
 	out, err := exec.Command("python3", args...).Output()
 	if err != nil {

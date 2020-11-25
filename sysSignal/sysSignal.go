@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"rpiWater/initial"
 	"rpiWater/public"
 	"syscall"
+	"time"
 )
 
 func Run() {
@@ -23,7 +25,12 @@ func Run() {
 		fmt.Println("sys signal:", s)
 		go func() {
 			public.Chan_stop <- 1 // stop process action
-			os.Exit(1)
+
+			time.Sleep(100000000)
+
+			initial.Run(func() {
+				os.Exit(1)
+			})
 		}()
 	}
 }
