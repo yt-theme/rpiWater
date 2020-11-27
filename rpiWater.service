@@ -1,0 +1,11 @@
+[Unit]
+Description=rpiWater
+After=network.target
+
+[Service]
+TimeoutStartSec=80
+ExecStart=/home/a/go/src/rpiWater/start.sh
+ExecStop=/bin/kill $MAINPID
+
+[Install]
+WantedBy=multi-user.target
