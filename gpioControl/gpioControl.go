@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-var isStarted = false
+var IsStarted = false
 
 func init() {
 
@@ -62,11 +62,11 @@ func Run() {
 //             handle
 // ========================================================================
 /*
-   sensor1 状态检查
+   sensor1(液位满传感器) 状态检查
 */
 func checkSensor1() {
-
 	public.S1_isChecking = true
+	var is_fullToLow = false // 代表从满到空的过程
 	for {
 		select {
 		case <-public.Chan_S1_stopCheck:
@@ -78,44 +78,69 @@ func checkSensor1() {
 
 			// --------------------------------------------------------
 			// check func
-
-			gpioRet, err := ExecPython([]string{"gpio.py", "18", "IN", "READ"}) // S1(液位传感器)
+			gpioRet18, err := ExecPython([]string{"gpio.py", "18", "IN", "READ"}) // S1(液位传感器)
 			if err != nil {
-				fmt.Println("gpioRet sensor Err =>", err)
+				fmt.Println("gpioRet sensor1 Err =>", err)
 			}
-			fmt.Println("S1 Value ======>", gpioRet)
+			// fmt.Println("S1 Value ======>", gpioRet)
 
-			// 满则关闭泵1 延时开户泵2
-			fmt.Println("do close M ===============================>", gpioRet, len(gpioRet), gpioRet == "1")
+			// 满则关闭泵1(向小缸抽水) 延时开户泵2(从小缸排水)
+			// fmt.Println("do close M1 ===============================>", gpioRet, len(gpioRet), gpioRet == "1")
 
-			if gpioRet == "0" {
-				gpioRet1, err := ExecPython([]string{"gpio.py", "12", "OUT", "LOW"})
+			if gpioRet18 == "0" {
+				is_fullToLow = true
+				_, err := ExecPython([]string{"gpio.py", "12", "OUT", "LOW"})
 				if err != nil {
 					fmt.Println("gpioRet pin12LOW Err =>", err)
 				}
-				fmt.Println(gpioRet1)
+				// fmt.Println(gpioRet1)
 
 				time.Sleep(100000000)
 
-				gpioRet, err = ExecPython([]string{"gpio.py", "16", "OUT", "HIGH"})
+				_, err = ExecPython([]string{"gpio.py", "16", "OUT", "HIGH"})
 				if err != nil {
 					fmt.Println("gpioRet pin16HIGH Err =>", err)
 				}
-				fmt.Println(gpioRet)
-			} else {
+				// fmt.Println(gpioRet)
+			} else if gpioRet18 == "1" {
+				// 如果S1高电平 && S1高电平 && 是从满到空的过程 则关闭进程
+				gpioRet22 := checkSensor2()
+				if gpioRet18 == "1" && gpioRet22 == "1" && is_fullToLow == true {
+					fmt.Println("do stop 16 =====>")
+					ExecPython([]string{"gpio.py", "16", "OUT", "LOW"})
 
+					goto endProcess
+				}
 			}
 			// --------------------------------------------------------
-
 			break
 		}
 	}
-
 end:
 	public.S1_isChecking = false
 	return
+endProcess:
+	// public.Chan_stop <- 1
+	public.Chan_sendMsg <- "cur process completed."
+	IsStarted = false
+
+	return
 }
 
+/*
+   sensor2(液位空传感器) 状态检查
+*/
+func checkSensor2() string {
+	gpioRet, err := ExecPython([]string{"gpio.py", "22", "IN", "READ"}) // S1(液位传感器)
+	if err != nil {
+		fmt.Println("gpioRet sensor2 Err =>", err)
+	}
+	fmt.Println("S2 Value ======>", gpioRet)
+
+	return gpioRet
+}
+
+// -----------------------------------------------------------------------------
 /*
    0 close
    1 open
@@ -124,30 +149,33 @@ end:
 func handleProcess(opa int) {
 	// 进程结束操作
 	if opa == 0 {
-		if isStarted == true {
+		if IsStarted == true {
 			public.Chan_S1_stopCheck <- 1 // sensor1停止检测
 
 			// ------------------------------------------------------------
 			ExecPython([]string{"gpio.py", "12", "OUT", "LOW"})
 			ExecPython([]string{"gpio.py", "16", "OUT", "LOW"})
 
-			gpioRet, err := ExecPython([]string{"gpio.py", "CLEANUP", "", ""})
-			if err != nil {
-				fmt.Println("gpioRet stopCheck Err =>", err)
-			}
-			fmt.Println(gpioRet)
+			// gpioRet, err := ExecPython([]string{"gpio.py", "CLEANUP", "", ""})
+			// if err != nil {
+			// 	fmt.Println("gpioRet stopCheck Err =>", err)
+			// }
+			// fmt.Println(gpioRet)
 			public.Chan_sendMsg <- "process stop"
 			// ------------------------------------------------------------
 
 		} else {
+			ExecPython([]string{"gpio.py", "12", "OUT", "LOW"})
+			ExecPython([]string{"gpio.py", "16", "OUT", "LOW"})
 			public.Chan_sendMsg <- "process already stopped"
 		}
 
-		isStarted = false
+		IsStarted = false
 	}
 	// 进程开始
 	if opa == 1 {
-		if isStarted == false {
+		fmt.Println("do process start =>")
+		if IsStarted == false {
 			public.Chan_sendMsg <- "process start"
 			ExecPython([]string{"gpio.py", "12", "OUT", "HIGH"})
 			go checkSensor1() // sensor1开始检测
@@ -155,11 +183,11 @@ func handleProcess(opa int) {
 			public.Chan_sendMsg <- "process already started"
 		}
 
-		isStarted = true
+		IsStarted = true
 	}
 }
 
-// 继电器1
+// 继电器1 (向小缸抽水)
 func handleR1(opa int) {
 	// 断开
 	if opa == 0 {
@@ -186,7 +214,7 @@ func handleR1(opa int) {
 	}
 }
 
-// 继电器2
+// 继电器2 (从小缸排水)
 func handleR2(opa int) {
 	if opa == 0 {
 		// ------------------------------------------------------------
