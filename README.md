@@ -1,5 +1,5 @@
 # no waterless
-# 出差盆景防萎器
+# 盆景远程浇喂器
 
 ### frp configure file at frp/
 
