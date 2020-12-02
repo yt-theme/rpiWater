@@ -1,5 +1,5 @@
 # no waterless
-# 出差盆景防萎器
+# 盆景远程浇喂器
 
 ### frp configure file at frp/
 
@@ -12,3 +12,5 @@
 	"tok": "xxx"
 }
 ```
+=======
+>>>>>>> 65e9fd730c9357776680feb662a2a2ca82240c86
