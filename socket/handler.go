@@ -1,7 +1,7 @@
 package sockets
 
 import (
-	"net"
+	// "net"
 	"rpiWater/config"
 	"rpiWater/public"
 
@@ -19,51 +19,25 @@ import (
 
 var cfg = config.Cfg
 
-var TCPServer *net.TCPAddr
-var Listener *net.TCPListener
-
 // data type
 type RetData struct {
 	Opa string `json:"opa"`
+	Tok string `json:"tok"`
 }
 
 // 处理器
-func handler(conn *ConnS) {
+func handler() {
 	fmt.Println("handler =>")
-	var chan_sendMsg_stop = make(chan int, 1) // 退出发送进程消息
+
+	// conn
+	conn := SocketConnect
 
 	defer func() {
 		fmt.Println("conn close =>")
-		chan_sendMsg_stop <- 1 // 消息协程退出
 		conn.Lock()
 		conn.connects.Close()
 		conn.Unlock()
 	}()
-
-	// send process's msg
-	go func(conn *ConnS) {
-		for {
-			select {
-			case msg := <-public.Chan_sendMsg:
-				fmt.Println("websocket.TextMessage =>", websocket.TextMessage)
-				conn.Lock()
-				err := conn.connects.WriteMessage(websocket.TextMessage, []byte(msg+"\r\n"))
-				conn.Unlock()
-				if err != nil {
-					public.Chan_stop <- 1 // 停止操作
-					fmt.Println("send process msg err =>", err)
-					continue
-				}
-				break
-			case <-chan_sendMsg_stop:
-				goto end1
-				break
-			}
-		}
-
-	end1:
-		return
-	}(conn)
 
 	// socket 通信
 	for {
@@ -74,7 +48,6 @@ func handler(conn *ConnS) {
 		// 接收
 		_, message, err := conn.connects.ReadMessage()
 		if err != nil {
-			chan_sendMsg_stop <- 1
 			conn.Lock()
 			conn.connects.WriteMessage(websocket.TextMessage, []byte("read buffer err\r\n"))
 			conn.Unlock()
@@ -92,27 +65,36 @@ func handler(conn *ConnS) {
 			continue
 		}
 
-		/*
-		   start || stop
-		*/
-		if retData.Opa == "start" {
-			public.Chan_start <- 1
+		// 判断token 才能操作
+		if retData.Tok != "" && retData.Tok == config.Cfg.PublicConnectToken {
+			/*
+			   start || stop
+			*/
+			if retData.Opa == "start" {
+				public.Chan_start <- 1
+				conn.Lock()
+				conn.connects.WriteMessage(websocket.TextMessage, []byte("received =>\r\n"))
+				conn.Unlock()
+
+			} else if retData.Opa == "stop" {
+				public.Chan_stop <- 1 // 停止操作
+				conn.Lock()
+				conn.connects.WriteMessage(websocket.TextMessage, []byte("received =>\r\n"))
+				conn.Unlock()
+			}
+			// ----------------------------------------------------------------
+		} else {
 			conn.Lock()
-			conn.connects.WriteMessage(websocket.TextMessage, []byte("received =>\r\n"))
+			conn.connects.WriteMessage(websocket.TextMessage, []byte("token err =>\r\n"))
 			conn.Unlock()
 
-		} else if retData.Opa == "stop" {
-			public.Chan_stop <- 1 // 停止操作
-			conn.Lock()
-			conn.connects.WriteMessage(websocket.TextMessage, []byte("received =>\r\n"))
-			conn.Unlock()
 		}
-		// ----------------------------------------------------------------
 
 	}
 
 	// 出现连接断开时返回
 end0:
 	public.Chan_stop <- 1
+	SocketConnect = nil
 	return
 }

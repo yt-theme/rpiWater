@@ -11,6 +11,7 @@
 <button id="close">Close</button>
 
 <hr/>
+<p><input id="token" type="password" placeholder="input token" value=""></p>
 <button id="sendStart">Send Start</button>
 <button id="sendStop">Send Stop</button>
 
@@ -20,7 +21,10 @@
 <br/>
 <br/>
 
-<script>  
+<script>
+function getTokenStr () {
+   return document.getElementById("token").value 
+}
 window.addEventListener("load", function(evt) {
     var output = document.getElementById("output");
     var input = document.getElementById("input");
@@ -56,7 +60,7 @@ window.addEventListener("load", function(evt) {
             return false;
         }
         print("SendStart: " + input.value);
-        ws.send(JSON.stringify({"opa" :"start"}))
+        ws.send(JSON.stringify({"opa" :"start", "tok": getTokenStr()}))
         return false;
     };
     document.getElementById("sendStop").onclick = function(evt) {
@@ -64,7 +68,7 @@ window.addEventListener("load", function(evt) {
             return false;
         }
         print("SendStop: " + input.value);
-        ws.send(JSON.stringify({"opa" :"stop"}))
+        ws.send(JSON.stringify({"opa" :"stop", "tok": getTokenStr()}))
         return false;
     };
     document.getElementById("close").onclick = function(evt) {

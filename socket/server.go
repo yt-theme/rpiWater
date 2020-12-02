@@ -17,6 +17,8 @@ type ConnS struct {
 	sync.Mutex
 }
 
+var SocketConnect *ConnS // socket 连接对象
+
 var addr = flag.String("addr", config.Cfg.SOCKETAddr, "http service address")
 var upgrader = websocket.Upgrader{} // use default options
 
@@ -24,15 +26,23 @@ var clientF, _ = ioutil.ReadFile("client.html")
 var homeTemplate = template.Must(template.New("").Parse(string(clientF)))
 
 func socketRouter(w http.ResponseWriter, r *http.Request) {
+
+	if SocketConnect != nil {
+		return
+	}
+
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Print("upgrade:", err)
 		return
 	}
-	defer c.Close()
+	defer func() {
+		c.Close()
+		SocketConnect = nil
+	}()
 
-	connObj := &ConnS{connects: c}
-	handler(connObj)
+	SocketConnect = &ConnS{connects: c}
+	handler()
 }
 
 func home(w http.ResponseWriter, r *http.Request) {
@@ -40,6 +50,9 @@ func home(w http.ResponseWriter, r *http.Request) {
 }
 
 func Run() {
+
+	go MsgChannelSender()
+
 	flag.Parse()
 	// log.SetFlags(0)
 	http.HandleFunc("/socketRouter", socketRouter)
