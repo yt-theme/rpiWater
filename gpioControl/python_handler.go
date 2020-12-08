@@ -1,3 +1,7 @@
+/*
+    直接调用py脚本操作gpio方式
+*/
+
 package gpioControl
 
 import (
