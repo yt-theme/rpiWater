@@ -29,3 +29,9 @@ func ExecPython(params []string) (string, error) {
 
 	return outData, nil
 }
+
+func PyGpioExec(params ...string) (string, error) {
+    tmpParams := []string{"gpio.py"}
+    tmpParams = append(tmpParams, params...)
+    return ExecPython(tmpParams)
+}

@@ -12,7 +12,7 @@ func init() {
 
 	// --------------------------------------------------------------------
 	// init gpio
-	initGpioRet, err := ExecPython([]string{"gpio.py", "INIT"})
+	initGpioRet, err := PyGpioExec("INIT")
 	if err != nil {
 		fmt.Println("initGpio Err =>", err)
 	}
@@ -78,7 +78,7 @@ func checkSensor1() {
 
 			// --------------------------------------------------------
 			// check func
-			gpioRet18, err := ExecPython([]string{"gpio.py", "18", "IN", "READ"}) // S1(液位传感器)
+			gpioRet18, err := PyGpioExec("18", "IN", "READ") // S1(液位传感器)
 			if err != nil {
 				fmt.Println("gpioRet sensor1 Err =>", err)
 			}
@@ -89,7 +89,7 @@ func checkSensor1() {
 
 			if gpioRet18 == "0" {
 				is_fullToLow = true
-				_, err := ExecPython([]string{"gpio.py", "12", "OUT", "LOW"})
+				_, err := PyGpioExec("12", "OUT", "LOW")
 				if err != nil {
 					fmt.Println("gpioRet pin12LOW Err =>", err)
 				}
@@ -97,7 +97,7 @@ func checkSensor1() {
 
 				time.Sleep(100000000)
 
-				_, err = ExecPython([]string{"gpio.py", "16", "OUT", "HIGH"})
+				_, err = PyGpioExec("16", "OUT", "HIGH")
 				if err != nil {
 					fmt.Println("gpioRet pin16HIGH Err =>", err)
 				}
@@ -107,7 +107,7 @@ func checkSensor1() {
 				gpioRet22 := checkSensor2()
 				if gpioRet18 == "1" && gpioRet22 == "1" && is_fullToLow == true {
 					fmt.Println("do stop 16 =====>")
-					ExecPython([]string{"gpio.py", "16", "OUT", "LOW"})
+					PyGpioExec("16", "OUT", "LOW")
 
 					goto endProcess
 				}
@@ -131,7 +131,7 @@ endProcess:
    sensor2(液位空传感器) 状态检查
 */
 func checkSensor2() string {
-	gpioRet, err := ExecPython([]string{"gpio.py", "22", "IN", "READ"}) // S1(液位传感器)
+	gpioRet, err := PyGpioExec("22", "IN", "READ") // S1(液位传感器)
 	if err != nil {
 		fmt.Println("gpioRet sensor2 Err =>", err)
 	}
@@ -153,10 +153,10 @@ func handleProcess(opa int) {
 			public.Chan_S1_stopCheck <- 1 // sensor1停止检测
 
 			// ------------------------------------------------------------
-			ExecPython([]string{"gpio.py", "12", "OUT", "LOW"})
-			ExecPython([]string{"gpio.py", "16", "OUT", "LOW"})
+			PyGpioExec("12", "OUT", "LOW")
+			PyGpioExec("16", "OUT", "LOW")
 
-			// gpioRet, err := ExecPython([]string{"gpio.py", "CLEANUP", "", ""})
+			// gpioRet, err := PyGpioExec("CLEANUP")
 			// if err != nil {
 			// 	fmt.Println("gpioRet stopCheck Err =>", err)
 			// }
@@ -165,8 +165,8 @@ func handleProcess(opa int) {
 			// ------------------------------------------------------------
 
 		} else {
-			ExecPython([]string{"gpio.py", "12", "OUT", "LOW"})
-			ExecPython([]string{"gpio.py", "16", "OUT", "LOW"})
+			PyGpioExec("12", "OUT", "LOW")
+			PyGpioExec("16", "OUT", "LOW")
 			public.Chan_sendMsg <- "process already stopped"
 		}
 
@@ -177,7 +177,7 @@ func handleProcess(opa int) {
 		fmt.Println("do process start =>")
 		if IsStarted == false {
 			public.Chan_sendMsg <- "process start"
-			ExecPython([]string{"gpio.py", "12", "OUT", "HIGH"})
+			PyGpioExec("12", "OUT", "HIGH")
 			go checkSensor1() // sensor1开始检测
 		} else {
 			public.Chan_sendMsg <- "process already started"
@@ -192,7 +192,7 @@ func handleR1(opa int) {
 	// 断开
 	if opa == 0 {
 		// ------------------------------------------------------------
-		gpioRet, err := ExecPython([]string{"gpio.py", "12", "OUT", "LOW"})
+		gpioRet, err := PyGpioExec("12", "OUT", "LOW")
 		if err != nil {
 			fmt.Println("gpioRet handleR1 Err =>", err)
 		}
@@ -204,7 +204,7 @@ func handleR1(opa int) {
 	if opa == 1 {
 		// ------------------------------------------------------------
 		fmt.Println("OPA START ===============>")
-		gpioRet, err := ExecPython([]string{"gpio.py", "12", "OUT", "HIGH"})
+		gpioRet, err := PyGpioExec("12", "OUT", "HIGH")
 		if err != nil {
 			fmt.Println("gpioRet handleR1 Err =>", err)
 		}
@@ -218,7 +218,7 @@ func handleR1(opa int) {
 func handleR2(opa int) {
 	if opa == 0 {
 		// ------------------------------------------------------------
-		gpioRet, err := ExecPython([]string{"gpio.py", "16", "OUT", "LOW"})
+		gpioRet, err := PyGpioExec("16", "OUT", "LOW")
 		if err != nil {
 			fmt.Println("gpioRet handleR2 Err =>", err)
 		}
@@ -228,7 +228,7 @@ func handleR2(opa int) {
 	}
 	if opa == 1 {
 		// ------------------------------------------------------------
-		gpioRet, err := ExecPython([]string{"gpio.py", "16", "OUT", "HIGH"})
+		gpioRet, err := PyGpioExec("16", "OUT", "HIGH")
 		if err != nil {
 			fmt.Println("gpioRet handleR2 Err =>", err)
 		}
